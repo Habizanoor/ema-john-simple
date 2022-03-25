@@ -3,24 +3,54 @@ import { faArrowAltCircleRight,  faTrash } from '@fortawesome/free-solid-svg-ico
 import React, { useEffect, useState } from 'react';
 import Product from '../Product/Product';
 import './Shop.css'
+import Cart from '../Cart/Cart';
+import { addToDb, getStoredCart } from '../../utilities/fakedb';
+
 
 const Shop = () => {
     const [products,setProducts] = useState([]);
     const[cart, setCart] = useState([]);
     
     useEffect( () => {
+        
         fetch('products.json')
         .then(res => res.json())
         .then(data => setProducts(data))
-        
-    },[])
+    },[]);
+
+    useEffect(()=>{
+        // local storage get 
+        const storedCart = getStoredCart();
+        const savedCart = [];
+        for(const id in storedCart){
+            const addedProduct = products.find(product => product.id === id);
+            if(addedProduct){
+                const quantity = storedCart[id];
+                addedProduct.quantity = quantity;
+                savedCart.push(addedProduct)
+            }    
+        }
+        setCart(savedCart);
+    },[products])
     const handleClicked = product =>{
-        console.log(product);
+        // console.log(product);
         
-        console.log(product.price);
+        // console.log(product.price);
         // do not do this: cart.push(product);
-        const newCart = [...cart,product];
-        setCart(newCart);    
+        let newCart = [];
+        const exists = cart.find(item => item.id === product.id);
+        if(!exists){
+            product.quantity = 1;
+            newCart = [...cart,product]
+        }
+        else{
+            const rest = cart.filter(item => item.id !== product.id);
+            exists.quantity =exists.quantity + 1;
+            newCart = [...rest,exists];
+        }
+        
+        setCart(newCart); 
+        addToDb(product.id);
     }
     
     return (
@@ -34,20 +64,11 @@ const Shop = () => {
             
             </div>
             <div className="cart-container">
-                <div className='cart-detail'>
-                    <h4>Order Summary</h4>
-                    <div className='cart-calc'>
-                        <p>Selected Items:{cart.length}</p>
-                        <p>Total Price:</p>
-                        <p>Total Shipping Charge: </p>
-                        <p>Tax:</p>
-                    </div>
-                    <h4>Grand Total: </h4>
-                    <div className="order-btns">
-                        <button id='cart-delete-btn'><span>Clear Cart</span><FontAwesomeIcon icon={faTrash}></FontAwesomeIcon> </button> <br /> 
-                        <button id='review-btn'><span>Review order</span><FontAwesomeIcon icon={faArrowAltCircleRight}></FontAwesomeIcon></button>    
-                    </div>
-                </div>
+               <div className="cart-detail">
+                  <Cart cart={cart}></Cart> 
+                </div> 
+                
+    
             </div>
             
         </div>
